@@ -1,5 +1,5 @@
 import { Alert, FlatList } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRoute } from "@react-navigation/native";
 
 import { Header } from "@components/Header";
@@ -15,6 +15,8 @@ import { Container, Form, Headerlist, NumberOfPlayer } from "./styles";
 import { AppError } from "@utils/AppError";
 import { playerAddByGroup } from "@storage/players/playerAddByGroup";
 import { playersGetByGroup } from "@storage/players/playersGetByGroup";
+import { playersGetByGroupAndTeam } from "@storage/players/playergetByGroupAndTeam";
+import { PlayerStorageDTO } from "@storage/players/playerStorageDTO";
 
 type RouteParams = {
   group: string;
@@ -23,7 +25,7 @@ type RouteParams = {
 export function Players() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [team, setTeam] = useState('Time A');
-  const [players, setPlayers] = useState([])
+  const [players, setPlayers] = useState<PlayerStorageDTO[]>([])
 
   const route = useRoute();
   const { group } = route.params as RouteParams;
@@ -40,8 +42,10 @@ export function Players() {
 
     try {
       await playerAddByGroup(newPlayer, group);
-      const players = await playersGetByGroup(group);
-      console.log(players, 'players ==>');
+      setNewPlayerName('');
+      fetchPlayersByTeam();
+      // const players = await playersGetByGroup(group);
+      // console.log(players, 'players ==>');
 
     } catch (error) {
       if (error instanceof AppError) {
@@ -53,6 +57,20 @@ export function Players() {
       }
     }
   }
+
+  async function fetchPlayersByTeam() {
+    try {
+      const playersByTeam = await playersGetByGroupAndTeam(group, team);
+      setPlayers(playersByTeam);
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Pessoas', 'Não foi possível carregar as pessoas do time adicionado.')
+    }
+  }
+
+  useEffect(() => {
+    fetchPlayersByTeam();
+  }, [team]);
 
   return (
     <Container>
@@ -66,6 +84,7 @@ export function Players() {
       <Form>
         <Input
           onChangeText={setNewPlayerName}
+          value={newPlayerName}
           placeholder="Nome da pessoa"
           autoCorrect={false}
         />
@@ -101,10 +120,10 @@ export function Players() {
 
       <FlatList
         data={players}
-        keyExtractor={item => item}
+        keyExtractor={item => item.name}
         renderItem={({ item }) => (
           <PlayerCard
-            name={item}
+            name={item.name}
             onRemove={() => { }}
           />
         )}
