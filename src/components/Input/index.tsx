@@ -15,4 +15,4 @@ export function Input({ inputRef, ...rest }: Props) {
       {...rest}
     />
   )
-}         
+}
